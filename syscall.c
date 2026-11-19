@@ -107,6 +107,97 @@ static int syscall_open(lua_State * L)
 	return 1;
 }
 
+static int syscall_read(lua_State * L)
+{
+	char * buf;
+	size_t count;
+	ssize_t ret;
+	int fd;
+	lua_Number num;
+
+	if (lua_type(L, 1) != LUA_TNUMBER) {
+		lua_pushnil(L);
+		lua_pushinteger(L, EBADF);
+		return 2;
+	}
+	num = lua_tonumber(L, 1);
+	if (num < INT_MIN || num > INT_MAX || num != (lua_Number) (int) num) {
+		lua_pushnil(L);
+		lua_pushinteger(L, EBADF);
+		return 2;
+	}
+	fd = (int) num;
+
+	if (lua_type(L, 2) != LUA_TNUMBER) {
+		lua_pushnil(L);
+		lua_pushinteger(L, EINVAL);
+		return 2;
+	}
+	num = lua_tonumber(L, 2);
+	if (num < 0 || num > SSIZE_MAX || num != (lua_Number) (size_t) num) {
+		lua_pushnil(L);
+		lua_pushinteger(L, EINVAL);
+		return 2;
+	}
+	count = (size_t) num;
+
+	buf = malloc(count > 0 ? count : 1);
+	if (buf == NULL) {
+		lua_pushnil(L);
+		lua_pushinteger(L, ENOMEM);
+		return 2;
+	}
+
+	ret = read(fd, buf, count);
+	if (ret < 0) {
+		lua_pushnil(L);
+		lua_pushinteger(L, errno);
+		free(buf);
+		return 2;
+	}
+	lua_pushlstring(L, buf, (size_t) ret);
+	free(buf);
+	return 1;
+}
+
+static int syscall_write(lua_State * L)
+{
+	const char * data;
+	size_t len;
+	ssize_t ret;
+	int fd;
+	lua_Number num;
+
+	if (lua_type(L, 1) != LUA_TNUMBER) {
+		lua_pushnil(L);
+		lua_pushinteger(L, EBADF);
+		return 2;
+	}
+	num = lua_tonumber(L, 1);
+	if (num < INT_MIN || num > INT_MAX || num != (lua_Number) (int) num) {
+		lua_pushnil(L);
+		lua_pushinteger(L, EBADF);
+		return 2;
+	}
+	fd = (int) num;
+
+	if (lua_type(L, 2) != LUA_TSTRING) {
+		lua_pushnil(L);
+		lua_pushinteger(L, EINVAL);
+		return 2;
+	}
+	data = lua_tolstring(L, 2, &len);
+
+	ret = write(fd, data, len);
+	if (ret < 0) {
+		lua_pushnil(L);
+		lua_pushinteger(L, errno);
+		return 2;
+	}
+	lua_pushinteger(L, (lua_Integer) ret);
+	return 1;
+}
+
 static int syscall_close(lua_State * L)
 {
 	long fd;
@@ -136,6 +227,8 @@ static int syscall_close(lua_State * L)
 
 static const struct luaL_Reg syscall_regs[] = {
 	{ "open",                syscall_open },
+	{ "read",                syscall_read },
+	{ "write",               syscall_write },
 	{ "close",               syscall_close },
 	{ NULL, NULL }
 };

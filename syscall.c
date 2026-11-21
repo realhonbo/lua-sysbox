@@ -9,6 +9,7 @@
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/sendfile.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
@@ -225,11 +226,83 @@ static int syscall_close(lua_State * L)
 	return 1;
 }
 
+static int syscall_sendfile(lua_State * L)
+{
+	int out_fd, in_fd;
+	size_t count;
+	off_t offset = 0, * offp = NULL;
+	ssize_t ret;
+	lua_Number num;
+
+	/* out_fd: mandatory, as in sendfile(2) */
+	if (lua_type(L, 1) != LUA_TNUMBER)
+		goto badfd;
+	num = lua_tonumber(L, 1);
+	if (num < INT_MIN || num > INT_MAX || num != (lua_Number) (int) num)
+		goto badfd;
+	out_fd = (int) num;
+
+	if (lua_type(L, 2) != LUA_TNUMBER)
+		goto badfd;
+	num = lua_tonumber(L, 2);
+	if (num < INT_MIN || num > INT_MAX || num != (lua_Number) (int) num)
+		goto badfd;
+	in_fd = (int) num;
+
+	/*
+	 * offset: optional.  Omitted or nil means NULL, i.e. the in_fd file
+	 * position is used and advanced.  A number means the explicit starting
+	 * offset; the updated offset is then returned as a second value.
+	 */
+	if (!lua_isnoneornil(L, 3)) {
+		if (lua_type(L, 3) != LUA_TNUMBER)
+			goto badval;
+		num = lua_tonumber(L, 3);
+		if (num < 0 || num > SSIZE_MAX || num != (lua_Number) (off_t) num)
+			goto badval;
+		offset = (off_t) num;
+		offp = &offset;
+	}
+
+	/* count: mandatory */
+	if (lua_type(L, 4) != LUA_TNUMBER)
+		goto badval;
+	num = lua_tonumber(L, 4);
+	if (num < 0 || num > SSIZE_MAX || num != (lua_Number) (size_t) num)
+		goto badval;
+	count = (size_t) num;
+
+	ret = sendfile(out_fd, in_fd, offp, count);
+	if (ret < 0) {
+		lua_pushnil(L);
+		lua_pushinteger(L, errno);
+		return 2;
+	}
+
+	lua_pushinteger(L, (lua_Integer) ret);
+	if (offp != NULL) {
+		lua_pushnumber(L, (lua_Number) offset);
+		return 2;
+	}
+	return 1;
+
+badfd:
+	lua_pushnil(L);
+	lua_pushinteger(L, EBADF);
+	return 2;
+
+badval:
+	lua_pushnil(L);
+	lua_pushinteger(L, EINVAL);
+	return 2;
+}
+
 static const struct luaL_Reg syscall_regs[] = {
 	{ "open",                syscall_open },
 	{ "read",                syscall_read },
 	{ "write",               syscall_write },
 	{ "close",               syscall_close },
+	{ "sendfile",            syscall_sendfile },
 	{ NULL, NULL }
 };
 

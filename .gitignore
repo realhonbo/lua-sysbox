@@ -3,5 +3,7 @@
 *.d
 
 compile_commands.json
-.cache/
 .clangd
+.cache/
+
+*.vim

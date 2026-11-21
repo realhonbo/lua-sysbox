@@ -7,7 +7,6 @@ STRIP     ?= strip
 CFLAGS    := -Wall -Wno-unused-result -fPIC -D_GNU_SOURCE -ggdb -O2
 CFLAGS    += -fno-omit-frame-pointer -I. $(if $(LUA_INCDIR),-I$(LUA_INCDIR)) $(EXTRA_CFLAGS)
 CFLAGS    += -MMD -MP
-LDFLAGS   := -lpthread
 OBJECTS    = libutil.o syscall.o
 TARGETS    = libutil.so syscall.so
 

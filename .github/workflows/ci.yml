@@ -1,0 +1,37 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Lua 5.1
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Lua 5.1
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends lua5.1 liblua5.1-0-dev
+
+      - name: Show toolchain
+        run: |
+          lua5.1 -v
+          cc --version | head -1
+
+      - name: Build
+        run: make LUA_INCDIR=/usr/include/lua5.1
+
+      - name: Test
+        run: make test LUA=lua5.1 LUA_INCDIR=/usr/include/lua5.1

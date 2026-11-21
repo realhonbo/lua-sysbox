@@ -1,8 +1,10 @@
 # Copyright 2026 Honbo He <hehongbo918@gmail.com>
 
 MAKEFLAGS += -r -R
-CC        ?= gcc
-STRIP     ?= strip
+
+CC        := gcc
+STRIP     := strip
+LUA       := lua
 
 CFLAGS    := -Wall -Wno-unused-result -fPIC -D_GNU_SOURCE -ggdb -O2
 CFLAGS    += -fno-omit-frame-pointer -I. $(if $(LUA_INCDIR),-I$(LUA_INCDIR)) $(EXTRA_CFLAGS)
@@ -10,7 +12,7 @@ CFLAGS    += -MMD -MP
 OBJECTS    = libutil.o syscall.o
 TARGETS    = libutil.so syscall.so
 
-.PHONY: all clean install
+.PHONY: all clean install test
 all: $(TARGETS)
 
 libutil.so: libutil.o
@@ -27,6 +29,9 @@ syscall.so: syscall.o
 # Installation is handled by luarocks (see the rockspec's build.install).
 install:
 	@true
+
+test: all
+	$(LUA) tests/run.lua
 
 clean:
 	rm -rf *.o *.d $(TARGETS)

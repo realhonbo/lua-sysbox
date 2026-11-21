@@ -135,7 +135,7 @@ static int syscall_read(lua_State * L)
 		return 2;
 	}
 	num = lua_tonumber(L, 2);
-	if (num < 0 || num > SSIZE_MAX || num != (lua_Number) (size_t) num) {
+	if (num < 0 || num > (lua_Number) SSIZE_MAX || num != (lua_Number) (size_t) num) {
 		lua_pushnil(L);
 		lua_pushinteger(L, EINVAL);
 		return 2;
@@ -258,7 +258,7 @@ static int syscall_sendfile(lua_State * L)
 		if (lua_type(L, 3) != LUA_TNUMBER)
 			goto badval;
 		num = lua_tonumber(L, 3);
-		if (num < 0 || num > SSIZE_MAX || num != (lua_Number) (off_t) num)
+		if (num < 0 || num > (lua_Number) SSIZE_MAX || num != (lua_Number) (off_t) num)
 			goto badval;
 		offset = (off_t) num;
 		offp = &offset;
@@ -268,7 +268,7 @@ static int syscall_sendfile(lua_State * L)
 	if (lua_type(L, 4) != LUA_TNUMBER)
 		goto badval;
 	num = lua_tonumber(L, 4);
-	if (num < 0 || num > SSIZE_MAX || num != (lua_Number) (size_t) num)
+	if (num < 0 || num > (lua_Number) SSIZE_MAX || num != (lua_Number) (size_t) num)
 		goto badval;
 	count = (size_t) num;
 
